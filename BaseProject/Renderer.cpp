@@ -166,16 +166,16 @@ void Renderer::MainLoop() {
 	uint32_t dynamicOffset = 0;
 
 	// Set binding group
-	dynamicOffset = 0 * (*uniformStride);
+	dynamicOffset =  0 * (*uniformStride);
 	renderPass.setBindGroup(0, bindGroup, 1, &dynamicOffset);
 	renderPass.drawIndexed(indexCount, 1, 0, 0, 0);
 
 	// Set binding group with a different uniform offset
+	/*
 	dynamicOffset = 1 * (*uniformStride);
 	renderPass.setBindGroup(0, bindGroup, 1, &dynamicOffset);
-	
-	// We use the `vertexCount` variable instead of hard-coding the vertex count
 	renderPass.drawIndexed(indexCount, 1, 0, 0, 0);
+	*/
 
 	renderPass.end();
 	renderPass.release();
@@ -238,7 +238,7 @@ TextureView Renderer::GetNextSurfaceTextureView() {
 void Renderer::InitializePipeline() {
 	
 	std::cout << "Creating shader module..." << std::endl;
-	ShaderModule shaderModule = loadShaderModule("..\\resources\\shaders.wgsl");
+	ShaderModule shaderModule = loadShaderModule("..\\resources\\shaders2.wgsl");
 	std::cout << fs::current_path().string() << std::endl;
 	std::cout << "Shader module: " << shaderModule << std::endl;
 
@@ -251,12 +251,12 @@ void Renderer::InitializePipeline() {
 	// Position Attribute
 	VertexAttribute positionAttrib;
 	positionAttrib.shaderLocation = 0; // @location(0)
-	positionAttrib.format = VertexFormat::Float32x2; // size of position
+	positionAttrib.format = VertexFormat::Float32x3; // size of position
 	positionAttrib.offset = 0;
 
 	vertexBufferLayouts[0].attributeCount = 1;
 	vertexBufferLayouts[0].attributes = &positionAttrib;
-	vertexBufferLayouts[0].arrayStride = 2 * sizeof(float); // stride = size of position
+	vertexBufferLayouts[0].arrayStride = 3 * sizeof(float); // stride = size of position
 	vertexBufferLayouts[0].stepMode = VertexStepMode::Vertex;
 
 	// Color attribute
@@ -291,12 +291,12 @@ void Renderer::InitializePipeline() {
 	// The face orientation is defined by assuming that when looking
 	// from the front of the face, its corner vertices are enumerated
 	// in the counter-clockwise (CCW) order.
-	pipelineDesc.primitive.frontFace = FrontFace::CCW;
+	pipelineDesc.primitive.frontFace = FrontFace::CW;
 	
 	// But the face orientation does not matter much because we do not
 	// cull (i.e. "hide") the faces pointing away from us (which is often
 	// used for optimization).
-	pipelineDesc.primitive.cullMode = CullMode::None;
+	pipelineDesc.primitive.cullMode = CullMode::Back;
 
 	// We tell that the programmable fragment shader stage is described
 	// by the function called 'fs_main' in the shader module.
@@ -364,9 +364,11 @@ void Renderer::InitializePipeline() {
 	queue.writeBuffer(uniformBuffer, 0, &uniforms, sizeof(MyUniforms));
 
 	// Upload second value
+	/*
 	uniforms.time = -1.0f;
 	uniforms.color = { 1.0f, 1.0f, 1.0f, 0.7f };
 	queue.writeBuffer(uniformBuffer, *uniformStride, &uniforms, sizeof(MyUniforms));
+	*/
 
 	// Create a binding
 	BindGroupEntry binding{};
@@ -428,7 +430,7 @@ void Renderer::InitializeBuffers() {
 	std::vector<uint16_t> indexData;
 	std::vector<float> colorData;
 
-	if(!loadGeometry("..\\resources\\webgpu.txt",pointData, colorData, indexData)){
+	if(!loadGeometry("..\\resources\\piramide.txt", pointData, colorData, indexData)){
 		std::cout<< "*** ERROR *** No se puede cargar el fichero"<<std::endl;
 	}
 
@@ -458,7 +460,7 @@ void Renderer::InitializeBuffers() {
 	queue.writeBuffer(indexBuffer, 0, indexData.data(), bufferDesc.size);
 
 	// Uniform buffer
-	bufferDesc.size = *uniformStride + sizeof(MyUniforms);
+	bufferDesc.size = sizeof(MyUniforms); //+ (*uniformStride)
 	bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Uniform;
 	bufferDesc.mappedAtCreation = false;
 	uniformBuffer = device.createBuffer(bufferDesc);
@@ -516,7 +518,7 @@ bool Renderer::loadGeometry(const fs::path& path,
         else if (currentSection == Section::Points) {
             std::istringstream iss(line);
             // Get x, y
-            for (int i = 0; i < 2; ++i) {
+            for (int i = 0; i < 3; ++i) {
                 iss >> value;
                 pointData.push_back(value);
             }
