@@ -15,10 +15,18 @@
 #endif // __EMSCRIPTEN__
 
 
+static uint32_t ceilToNextMultiple(uint32_t value, uint32_t step) {
+	uint32_t divide_and_ceil = value / step + (value % step == 0 ? 0 : 1);
+	return step * divide_and_ceil;
+}
+
 
 Renderer::Renderer(): device(nullptr), queue(nullptr), surface(nullptr), pipeline(nullptr), 
 		pointBuffer(nullptr), colorBuffer(nullptr), indexBuffer(nullptr), uniformBuffer(nullptr), 
-		bindGroup(nullptr) {};
+		bindGroup(nullptr)
+{
+	uniformStride = new uint32_t();
+};
 
 
 bool Renderer::Initialize() {
@@ -54,7 +62,7 @@ bool Renderer::Initialize() {
 
 	// Before adapter.requestDevice(deviceDesc)
 	RequiredLimits requiredLimits = GetRequiredLimits(adapter);
-		
+	
 	deviceDesc.requiredLimits = &requiredLimits;
 	device = adapter.requestDevice(deviceDesc);
 
@@ -155,7 +163,16 @@ void Renderer::MainLoop() {
 	renderPass.setVertexBuffer(0, pointBuffer, 0, pointBuffer.getSize());
 	renderPass.setVertexBuffer(1, colorBuffer, 0, colorBuffer.getSize());	
 
-	renderPass.setBindGroup(0, bindGroup, 0, nullptr);
+	uint32_t dynamicOffset = 0;
+
+	// Set binding group
+	dynamicOffset = 0 * (*uniformStride);
+	renderPass.setBindGroup(0, bindGroup, 1, &dynamicOffset);
+	renderPass.drawIndexed(indexCount, 1, 0, 0, 0);
+
+	// Set binding group with a different uniform offset
+	dynamicOffset = 1 * (*uniformStride);
+	renderPass.setBindGroup(0, bindGroup, 1, &dynamicOffset);
 	
 	// We use the `vertexCount` variable instead of hard-coding the vertex count
 	renderPass.drawIndexed(indexCount, 1, 0, 0, 0);
@@ -321,6 +338,7 @@ void Renderer::InitializePipeline() {
 	bindingLayout.visibility = ShaderStage::Vertex | ShaderStage::Fragment;
 	bindingLayout.buffer.type = BufferBindingType::Uniform;
 	bindingLayout.buffer.minBindingSize = sizeof(MyUniforms);
+	bindingLayout.buffer.hasDynamicOffset = true;
 	
 	// Create a bind group layout
 	BindGroupLayoutDescriptor bindGroupLayoutDesc;
@@ -344,6 +362,11 @@ void Renderer::InitializePipeline() {
 	uniforms.time = 1.0f;
 	uniforms.color = { 0.0f, 1.0f, 0.4f, 1.0f };
 	queue.writeBuffer(uniformBuffer, 0, &uniforms, sizeof(MyUniforms));
+
+	// Upload second value
+	uniforms.time = -1.0f;
+	uniforms.color = { 1.0f, 1.0f, 1.0f, 0.7f };
+	queue.writeBuffer(uniformBuffer, *uniformStride, &uniforms, sizeof(MyUniforms));
 
 	// Create a binding
 	BindGroupEntry binding{};
@@ -388,6 +411,12 @@ RequiredLimits Renderer::GetRequiredLimits(Adapter adapter) const {
 	requiredLimits.limits.maxBindGroups = 1;
 	requiredLimits.limits.maxUniformBuffersPerShaderStage = 1;
 	requiredLimits.limits.maxUniformBufferBindingSize = 16 * 4;
+	requiredLimits.limits.maxDynamicUniformBuffersPerPipelineLayout = 1;
+
+	*uniformStride = ceilToNextMultiple(
+		(uint32_t)sizeof(MyUniforms),
+		(uint32_t)requiredLimits.limits.minUniformBufferOffsetAlignment
+	);
 
 	return requiredLimits;
 }
@@ -429,7 +458,7 @@ void Renderer::InitializeBuffers() {
 	queue.writeBuffer(indexBuffer, 0, indexData.data(), bufferDesc.size);
 
 	// Uniform buffer
-	bufferDesc.size = sizeof(MyUniforms);
+	bufferDesc.size = *uniformStride + sizeof(MyUniforms);
 	bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Uniform;
 	bufferDesc.mappedAtCreation = false;
 	uniformBuffer = device.createBuffer(bufferDesc);

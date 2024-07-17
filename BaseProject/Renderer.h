@@ -65,4 +65,5 @@ private:
 	BindGroup bindGroup;
 
 	MyUniforms uniforms;
+	uint32_t* uniformStride;
 };
