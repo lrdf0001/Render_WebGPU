@@ -66,4 +66,7 @@ private:
 
 	MyUniforms uniforms;
 	uint32_t* uniformStride;
+
+	Texture depthTexture;
+	TextureView depthTextureView;
 };

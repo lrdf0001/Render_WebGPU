@@ -20,6 +20,7 @@ int main() {
 	while (app.IsRunning()) {
 		app.MainLoop();
 	}
+	app.Terminate();
 #endif // __EMSCRIPTEN__
 
 	return 0;

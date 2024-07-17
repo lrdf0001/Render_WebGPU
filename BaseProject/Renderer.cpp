@@ -23,7 +23,7 @@ static uint32_t ceilToNextMultiple(uint32_t value, uint32_t step) {
 
 Renderer::Renderer(): device(nullptr), queue(nullptr), surface(nullptr), pipeline(nullptr), 
 		pointBuffer(nullptr), colorBuffer(nullptr), indexBuffer(nullptr), uniformBuffer(nullptr), 
-		bindGroup(nullptr)
+		bindGroup(nullptr), depthTexture(nullptr), depthTextureView(nullptr)
 {
 	uniformStride = new uint32_t();
 };
@@ -106,9 +106,15 @@ bool Renderer::Initialize() {
 
 
 void Renderer::Terminate() {
+
 	pointBuffer.release();
 	indexBuffer.release();
 	colorBuffer.release();
+
+	depthTextureView.release();
+	depthTexture.destroy();
+	depthTexture.release();
+
 	pipeline.release();
 	surface.unconfigure();
 	queue.release();
@@ -144,13 +150,28 @@ void Renderer::MainLoop() {
 	renderPassColorAttachment.loadOp = LoadOp::Clear;
 	renderPassColorAttachment.storeOp = StoreOp::Store;
 	renderPassColorAttachment.clearValue = WGPUColor{ 0.2, 0.2, 0.2, 1.0 };
+
+	// Add depth/stencil attachment:
+	RenderPassDepthStencilAttachment depthStencilAttachment;
+	depthStencilAttachment.view = depthTextureView;	
+	depthStencilAttachment.depthClearValue = 1.0f; // The initial value of the depth buffer, meaning "far"	
+	depthStencilAttachment.depthLoadOp = LoadOp::Clear; // Operation settings comparable to the color attachment
+	depthStencilAttachment.depthStoreOp = StoreOp::Store;	
+	depthStencilAttachment.depthReadOnly = false; // we could turn off writing to the depth buffer globally here	
+	depthStencilAttachment.stencilClearValue = 0; // Stencil setup, mandatory but unused
+	depthStencilAttachment.stencilLoadOp = LoadOp::Undefined;
+	depthStencilAttachment.stencilStoreOp = StoreOp::Undefined;
+	depthStencilAttachment.stencilReadOnly = true;
+	
+	renderPassDesc.depthStencilAttachment = &depthStencilAttachment;
+
 #ifndef WEBGPU_BACKEND_WGPU
 	renderPassColorAttachment.depthSlice = WGPU_DEPTH_SLICE_UNDEFINED;
 #endif // NOT WEBGPU_BACKEND_WGPU
 
 	renderPassDesc.colorAttachmentCount = 1;
 	renderPassDesc.colorAttachments = &renderPassColorAttachment;
-	renderPassDesc.depthStencilAttachment = nullptr;
+	
 	renderPassDesc.timestampWrites = nullptr;
 
 	RenderPassEncoder renderPass = encoder.beginRenderPass(renderPassDesc);
@@ -298,6 +319,8 @@ void Renderer::InitializePipeline() {
 	// used for optimization).
 	pipelineDesc.primitive.cullMode = CullMode::Back;
 
+	
+
 	// We tell that the programmable fragment shader stage is described
 	// by the function called 'fs_main' in the shader module.
 	FragmentState fragmentState;
@@ -325,12 +348,24 @@ void Renderer::InitializePipeline() {
 	fragmentState.targets = &colorTarget;
 	pipelineDesc.fragment = &fragmentState;
 
-	pipelineDesc.depthStencil = nullptr;
+	// Depth buffer
+	DepthStencilState depthStencilState = Default;
+	pipelineDesc.depthStencil = &depthStencilState;
+
+	depthStencilState.depthCompare = CompareFunction::Less;
+	depthStencilState.depthWriteEnabled = true;
+
+	TextureFormat depthTextureFormat = TextureFormat::Depth24Plus;
+	depthStencilState.format = depthTextureFormat;
+
+	depthStencilState.stencilReadMask = 0;
+	depthStencilState.stencilWriteMask = 0;
+
+	pipelineDesc.depthStencil = &depthStencilState;
 
 	pipelineDesc.multisample.count = 1;
 	pipelineDesc.multisample.mask = ~0u;
 	pipelineDesc.multisample.alphaToCoverageEnabled = false;
-	
 
 	// Create binding layout (don't forget to = Default)
 	BindGroupLayoutEntry bindingLayout = Default;
@@ -355,6 +390,29 @@ void Renderer::InitializePipeline() {
 	// Assign the PipelineLayout to the RenderPipelineDescriptor's layout field
 	pipelineDesc.layout = layout;
 	pipeline = device.createRenderPipeline(pipelineDesc);
+
+	// Create the depth texture
+	TextureDescriptor depthTextureDesc;
+	depthTextureDesc.dimension = TextureDimension::_2D;
+	depthTextureDesc.format = depthTextureFormat;
+	depthTextureDesc.mipLevelCount = 1;
+	depthTextureDesc.sampleCount = 1;
+	depthTextureDesc.size = { 640, 480, 1 };
+	depthTextureDesc.usage = TextureUsage::RenderAttachment;
+	depthTextureDesc.viewFormatCount = 1;
+	depthTextureDesc.viewFormats = (WGPUTextureFormat*)&depthTextureFormat;
+	depthTexture = device.createTexture(depthTextureDesc);
+
+	// Create the view of the depth texture 
+	TextureViewDescriptor depthTextureViewDesc;
+	depthTextureViewDesc.aspect = TextureAspect::DepthOnly;
+	depthTextureViewDesc.baseArrayLayer = 0;
+	depthTextureViewDesc.arrayLayerCount = 1;
+	depthTextureViewDesc.baseMipLevel = 0;
+	depthTextureViewDesc.mipLevelCount = 1;
+	depthTextureViewDesc.dimension = TextureViewDimension::_2D;
+	depthTextureViewDesc.format = depthTextureFormat;
+	depthTextureView = depthTexture.createView(depthTextureViewDesc);
 
 	InitializeBuffers();
 
@@ -406,6 +464,10 @@ RequiredLimits Renderer::GetRequiredLimits(Adapter adapter) const {
 	requiredLimits.limits.maxBufferSize = 6 * 2 * sizeof(float);
 	// Maximum stride between 2 consecutive vertices in the vertex buffer
 	requiredLimits.limits.maxVertexBufferArrayStride = 2 * sizeof(float);
+
+	requiredLimits.limits.maxTextureDimension1D = 480;
+	requiredLimits.limits.maxTextureDimension2D = 640;
+	requiredLimits.limits.maxTextureArrayLayers = 1;
 
 	requiredLimits.limits.minUniformBufferOffsetAlignment = supportedLimits.limits.minUniformBufferOffsetAlignment;
 	requiredLimits.limits.minStorageBufferOffsetAlignment = supportedLimits.limits.minStorageBufferOffsetAlignment;
