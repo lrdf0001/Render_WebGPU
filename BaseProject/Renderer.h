@@ -3,20 +3,28 @@
 #include <webgpu/webgpu.hpp>
 
 #include <GLFW/glfw3.h>
-#include <filesystem>
+#include <glm/glm.hpp>
 
+#include <filesystem>
 #include <array>
 
 
 namespace fs = std::filesystem;
 
 using namespace wgpu;
+using glm::mat4x4;
+using glm::vec4;
 
 struct MyUniforms {
-	std::array<float, 4> color;  // or float color[4]
-	float time;
+	mat4x4 projectionMatrix;
+	mat4x4 viewMatrix;
+	mat4x4 modelMatrix;
+	std::array<float, 4> color;
+	float time;	
 	float _pad[3];
 };
+
+static const float PI = 3.14159265358979323846f;
 
 class Renderer {
 public:
@@ -41,10 +49,13 @@ private:
 	// Substep of Initialize() that creates the render pipeline
 	void InitializePipeline();
 	RequiredLimits GetRequiredLimits(Adapter adapter) const;
+	
 	void InitializeBuffers();
+	void InitializeUniforms();
 
 	bool loadGeometry(const fs::path& path, std::vector<float>& pointData, std::vector<float>& colorData, std::vector<uint16_t>& indexData);
 	ShaderModule loadShaderModule(const fs::path& path);
+
 
 private:
 	// We put here all the variables that are shared between init and main loop

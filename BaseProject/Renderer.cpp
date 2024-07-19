@@ -1,6 +1,14 @@
 #include "Renderer.h"
 
 #include <glfw3webgpu.h>
+
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_LEFT_HANDED
+#define GLM_FORCE_SILENT_WARNINGS
+#include <glm/ext.hpp>
+#include <glm/ext/matrix_transform.hpp> // glm::translate, glm::rotate, glm::scale
+#include <glm/ext/matrix_clip_space.hpp> // glm::perspective
+
 #include <iostream>
 #include <cassert>
 #include <vector>
@@ -14,6 +22,7 @@
 #  include <emscripten.h>
 #endif // __EMSCRIPTEN__
 
+static mat4x4 T1S = mat4x4(1.0);
 
 static uint32_t ceilToNextMultiple(uint32_t value, uint32_t step) {
 	uint32_t divide_and_ceil = value / step + (value % step == 0 ? 0 : 1);
@@ -130,6 +139,11 @@ void Renderer::MainLoop() {
 
 	uniforms.time = static_cast<float>(glfwGetTime()); // glfwGetTime returns a double
 	queue.writeBuffer(uniformBuffer, offsetof(MyUniforms, time), &uniforms.time, sizeof(MyUniforms::time));
+	
+	float angle1 = uniforms.time * 0.25;
+	mat4x4 R1 = glm::rotate(mat4x4(1.0), angle1, glm::vec3(0.0, 0.0, 1.0));
+	uniforms.modelMatrix = R1 * T1S;
+	queue.writeBuffer(uniformBuffer, offsetof(MyUniforms, modelMatrix), &uniforms.modelMatrix, sizeof(MyUniforms::modelMatrix));
 
 	// Get the next target texture view
 	TextureView targetView = GetNextSurfaceTextureView();
@@ -318,7 +332,6 @@ void Renderer::InitializePipeline() {
 	// cull (i.e. "hide") the faces pointing away from us (which is often
 	// used for optimization).
 	pipelineDesc.primitive.cullMode = CullMode::Back;
-
 	
 
 	// We tell that the programmable fragment shader stage is described
@@ -417,8 +430,7 @@ void Renderer::InitializePipeline() {
 	InitializeBuffers();
 
 	// Upload the initial value of the uniforms
-	uniforms.time = 1.0f;
-	uniforms.color = { 0.0f, 1.0f, 0.4f, 1.0f };
+	InitializeUniforms();
 	queue.writeBuffer(uniformBuffer, 0, &uniforms, sizeof(MyUniforms));
 
 	// Upload second value
@@ -529,6 +541,75 @@ void Renderer::InitializeBuffers() {
 
 	float currentTime = 1.0f;
 	queue.writeBuffer(uniformBuffer, 0, &currentTime, sizeof(float));
+}
+
+
+void Renderer::InitializeUniforms() {
+	uniforms.time = 1.0f;
+	uniforms.color = { 0.0f, 1.0f, 0.4f, 1.0f };
+
+	mat4x4 S = transpose(mat4x4(
+		0.3, 0.0, 0.0, 0.0,
+		0.0, 0.3, 0.0, 0.0,
+		0.0, 0.0, 0.3, 0.0,
+		0.0, 0.0, 0.0, 1.0
+	));
+
+	// Translate the object
+	mat4x4 T1 = transpose(mat4x4(
+		1.0, 0.0, 0.0, 0.5,
+		0.0, 1.0, 0.0, 0.0,
+		0.0, 0.0, 1.0, 0.0,
+		0.0, 0.0, 0.0, 1.0
+	));
+
+	// Translate the view
+	glm::vec3 focalPoint(0.0, 0.0, -2.0);
+	mat4x4 T2 = transpose(mat4x4(
+		1.0, 0.0, 0.0, -focalPoint.x,
+		0.0, 1.0, 0.0, -focalPoint.y,
+		0.0, 0.0, 1.0, -focalPoint.z,
+		0.0, 0.0, 0.0, 1.0
+	));
+
+	// Rotate the object
+	float angle1 = 2.0f; // arbitrary time
+	float c1 = cos(angle1);
+	float s1 = sin(angle1);
+	mat4x4 R1 = transpose(mat4x4(
+		c1, s1, 0.0, 0.0,
+		-s1, c1, 0.0, 0.0,
+		0.0, 0.0, 1.0, 0.0,
+		0.0, 0.0, 0.0, 1.0
+	));
+
+	// Rotate the view point
+	float angle2 = 3.0f * PI / 4.0f;
+	float c2 = cos(angle2);
+	float s2 = sin(angle2);
+	mat4x4 R2 = transpose(mat4x4(
+		1.0, 0.0, 0.0, 0.0,
+		0.0, c2, s2, 0.0,
+		0.0, -s2, c2, 0.0,
+		0.0, 0.0, 0.0, 1.0
+	));
+
+	T1S = T1 * S;
+	uniforms.modelMatrix = R1 * T1 * S;
+	uniforms.viewMatrix = T2 * R2;
+
+	float ratio = 640.0f / 480.0f;
+	float focalLength = 2.0;
+	float near = 0.01f;
+	float far = 100.0f;
+	float divider = 1 / (focalLength * (far - near));
+	uniforms.projectionMatrix = transpose(mat4x4(
+		1.0, 0.0, 0.0, 0.0,
+		0.0, ratio, 0.0, 0.0,
+		0.0, 0.0, far * divider, -far * near * divider,
+		0.0, 0.0, 1.0 / focalLength, 0.0
+	));
+	
 }
 
 
