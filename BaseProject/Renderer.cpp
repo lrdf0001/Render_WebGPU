@@ -281,7 +281,7 @@ void Renderer::InitializePipeline() {
 	RenderPipelineDescriptor pipelineDesc;
 
 	// Configure the vertex pipeline
-	std::vector<VertexBufferLayout> vertexBufferLayouts(2);
+	std::vector<VertexBufferLayout> vertexBufferLayouts(3);
 	
 	// Position Attribute
 	VertexAttribute positionAttrib;
@@ -294,16 +294,27 @@ void Renderer::InitializePipeline() {
 	vertexBufferLayouts[0].arrayStride = 3 * sizeof(float); // stride = size of position
 	vertexBufferLayouts[0].stepMode = VertexStepMode::Vertex;
 
+	// Normal Attribute
+	VertexAttribute normalAttrib;
+	normalAttrib.shaderLocation = 1; // @location(1)
+	normalAttrib.format = VertexFormat::Float32x3; 
+	normalAttrib.offset = 0;
+
+	vertexBufferLayouts[1].attributeCount = 1;
+	vertexBufferLayouts[1].attributes = &normalAttrib;
+	vertexBufferLayouts[1].arrayStride = 3 * sizeof(float); 
+	vertexBufferLayouts[1].stepMode = VertexStepMode::Vertex;
+	
 	// Color attribute
 	VertexAttribute colorAttrib;
-	colorAttrib.shaderLocation = 1; // @location(1)
+	colorAttrib.shaderLocation = 2; // @location(2)
 	colorAttrib.format = VertexFormat::Float32x3; // size of color
 	colorAttrib.offset = 0;
 
-	vertexBufferLayouts[1].attributeCount = 1;
-	vertexBufferLayouts[1].attributes = &colorAttrib;
-	vertexBufferLayouts[1].arrayStride = 3 * sizeof(float); // stride = size of color
-	vertexBufferLayouts[1].stepMode = VertexStepMode::Vertex;
+	vertexBufferLayouts[2].attributeCount = 1;
+	vertexBufferLayouts[2].attributes = &colorAttrib;
+	vertexBufferLayouts[2].arrayStride = 3 * sizeof(float); // stride = size of color
+	vertexBufferLayouts[2].stepMode = VertexStepMode::Vertex;
 
 	pipelineDesc.vertex.bufferCount = static_cast<uint32_t>(vertexBufferLayouts.size());
 	pipelineDesc.vertex.buffers = vertexBufferLayouts.data();
@@ -469,13 +480,15 @@ RequiredLimits Renderer::GetRequiredLimits(Adapter adapter) const {
 	RequiredLimits requiredLimits = Default;
 
 	// We use at most 1 vertex attribute for now
-	requiredLimits.limits.maxVertexAttributes = 1;
+	requiredLimits.limits.maxVertexAttributes = 3;
 	// We should also tell that we use 1 vertex buffers
 	requiredLimits.limits.maxVertexBuffers = 1;
 	// Maximum size of a buffer is 6 vertices of 2 float each
-	requiredLimits.limits.maxBufferSize = 6 * 2 * sizeof(float);
+	requiredLimits.limits.maxBufferSize = 16 * 3 * sizeof(float);
 	// Maximum stride between 2 consecutive vertices in the vertex buffer
-	requiredLimits.limits.maxVertexBufferArrayStride = 2 * sizeof(float);
+	requiredLimits.limits.maxVertexBufferArrayStride = 3 * sizeof(float);
+
+	requiredLimits.limits.maxInterStageShaderComponents = 6;
 
 	requiredLimits.limits.maxTextureDimension1D = 480;
 	requiredLimits.limits.maxTextureDimension2D = 640;
@@ -486,7 +499,7 @@ RequiredLimits Renderer::GetRequiredLimits(Adapter adapter) const {
 
 	requiredLimits.limits.maxBindGroups = 1;
 	requiredLimits.limits.maxUniformBuffersPerShaderStage = 1;
-	requiredLimits.limits.maxUniformBufferBindingSize = 16 * 4;
+	requiredLimits.limits.maxUniformBufferBindingSize = 16 * 4 * sizeof(float);;
 	requiredLimits.limits.maxDynamicUniformBuffersPerPipelineLayout = 1;
 
 	*uniformStride = ceilToNextMultiple(
@@ -502,9 +515,10 @@ void Renderer::InitializeBuffers() {
 
 	std::vector<float> pointData;
 	std::vector<uint16_t> indexData;
+	std::vector<float> normalsData;
 	std::vector<float> colorData;
 
-	if(!loadGeometry("..\\resources\\piramide.txt", pointData, colorData, indexData)){
+	if(!loadGeometry("..\\resources\\piramide.txt", pointData, colorData, normalsData, indexData)){
 		std::cout<< "*** ERROR *** No se puede cargar el fichero"<<std::endl;
 	}
 
@@ -524,7 +538,13 @@ void Renderer::InitializeBuffers() {
 	bufferDesc.size = colorData.size() * sizeof(float);
 	bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Vertex;
 	colorBuffer = device.createBuffer(bufferDesc);
-	queue.writeBuffer(colorBuffer, 0, colorData.data(), bufferDesc.size);	
+	queue.writeBuffer(colorBuffer, 0, colorData.data(), bufferDesc.size);
+
+	bufferDesc.label = "Vertex Normal";
+	bufferDesc.size = normalsData.size() * sizeof(float);
+	bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Vertex;
+	colorBuffer = device.createBuffer(bufferDesc);
+	queue.writeBuffer(colorBuffer, 0, normalsData.data(), bufferDesc.size);
 
 	bufferDesc.label = "Vertex Index";
 	bufferDesc.size = indexData.size() * sizeof(uint16_t);
@@ -615,7 +635,8 @@ void Renderer::InitializeUniforms() {
 
 bool Renderer::loadGeometry(const fs::path& path, 
 								std::vector<float>& pointData, 
-								std::vector<float>& colorData, 
+								std::vector<float>& colorData,
+								std::vector<float>& normalsData,
 								std::vector<uint16_t>& indexData) 
 {
     std::ifstream file(path);
@@ -627,10 +648,13 @@ bool Renderer::loadGeometry(const fs::path& path,
 	colorData.clear();
     indexData.clear();
 
+	std::vector<float> aux;
+
     enum class Section {
         None,
         Points,
 		Colors,
+		Normals,
         Indices,
     };
     Section currentSection = Section::None;
@@ -651,6 +675,9 @@ bool Renderer::loadGeometry(const fs::path& path,
         }
 		else if(line == "[colors]"){
 			currentSection = Section::Colors;
+		}
+		else if (line == "[normals]") {
+			currentSection = Section::Normals;
 		}
 		else if (line == "[indices]") {
             currentSection = Section::Indices;
@@ -674,6 +701,13 @@ bool Renderer::loadGeometry(const fs::path& path,
                 colorData.push_back(value);
             }
         }
+		else if (currentSection == Section::Normals) {
+			std::istringstream iss(line);
+			for (int i = 0; i < 3; ++i) {
+				iss >> value;
+				aux.push_back(value);
+			}
+		}
         else if (currentSection == Section::Indices) {
             std::istringstream iss(line);
             // Get corners #0 #1 and #2
@@ -682,6 +716,16 @@ bool Renderer::loadGeometry(const fs::path& path,
                 indexData.push_back(index);
             }
         }
+
+		for (int i = 0; i < indexData.size(); i++) {
+			int ini = indexData[i] * 3;
+			int fin = indexData[i] * 3 + 3;
+			for (int j = ini; j < fin; j++) {
+				std::cout << aux[j] << " ";
+				normalsData.push_back(aux[j]);
+			}
+			std::cout << std::endl;
+		}
     }
     return true;
 }

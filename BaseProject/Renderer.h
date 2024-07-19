@@ -53,7 +53,12 @@ private:
 	void InitializeBuffers();
 	void InitializeUniforms();
 
-	bool loadGeometry(const fs::path& path, std::vector<float>& pointData, std::vector<float>& colorData, std::vector<uint16_t>& indexData);
+	bool loadGeometry(const fs::path& path, 
+					std::vector<float>& pointData, 
+					std::vector<float>& colorData, 
+					std::vector<float>& normalsData,
+					std::vector<uint16_t>& indexData);
+	
 	ShaderModule loadShaderModule(const fs::path& path);
 
 
