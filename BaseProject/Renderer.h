@@ -30,7 +30,6 @@ class Renderer {
 public:
 
 	Renderer();
-	~Renderer();
 
 	// Initialize everything and return true if it went all right
 	bool Initialize();
@@ -54,12 +53,7 @@ private:
 	void InitializeBuffers();
 	void InitializeUniforms();
 
-	bool loadGeometry(const fs::path& path, 
-					std::vector<float>& pointData,
-					std::vector<float>& normalData,
-					std::vector<float>& colorData, 
-					std::vector<uint16_t>& indexData);
-
+	bool loadGeometry(const fs::path& path, std::vector<float>& pointData, std::vector<float>& colorData, std::vector<uint16_t>& indexData);
 	ShaderModule loadShaderModule(const fs::path& path);
 
 
@@ -76,7 +70,6 @@ private:
 	Buffer pointBuffer;
     Buffer indexBuffer;
 	Buffer colorBuffer;
-	Buffer normalBuffer;
 	uint32_t indexCount;
 
 	Buffer uniformBuffer;

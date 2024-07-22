@@ -12,14 +12,12 @@ struct MyUniforms {
 
 struct VertexInput {
     @location(0) position: vec3f,
-    @location(1) normal: vec3f,
-    @location(2) color: vec3f,
+    @location(1) color: vec3f,
 };
 
 struct VertexOutput {
     @builtin(position) position: vec4f,
     @location(0) color: vec3f,
-    @location(1) normal: vec3f,
 };
 
 @vertex
@@ -33,6 +31,6 @@ fn vs_main(in: VertexInput) -> VertexOutput  {
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4f {
-    let color = in.normal * 0.5 + 0.5;
+    let color = in.color;
     return vec4f(color, uMyUniforms.color.a);
 }
