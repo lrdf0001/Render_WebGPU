@@ -13,6 +13,7 @@ namespace fs = std::filesystem;
 
 using namespace wgpu;
 using glm::mat4x4;
+using glm::vec4;
 
 struct MyUniforms {
 	mat4x4 projectionMatrix;
@@ -22,7 +23,6 @@ struct MyUniforms {
 	float time;	
 	float _pad[3];
 };
-
 
 static const float PI = 3.14159265358979323846f;
 
