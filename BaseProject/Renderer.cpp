@@ -35,7 +35,7 @@ static uint32_t ceilToNextMultiple(uint32_t value, uint32_t step) {
 
 Renderer::Renderer(): device(nullptr), queue(nullptr), surface(nullptr), pipeline(nullptr), 
 		pointBuffer(nullptr), colorBuffer(nullptr), normalBuffer(nullptr), indexBuffer(nullptr), uniformBuffer(nullptr),
-		bindGroup(nullptr), depthTexture(nullptr), depthTextureView(nullptr)
+		bindGroup(nullptr), depthTexture(nullptr), depthTextureView(nullptr), vertexData()
 {
 	uniformStride = new uint32_t();
 };
@@ -122,6 +122,7 @@ void Renderer::Terminate() {
 	pointBuffer.release();
 	indexBuffer.release();
 	colorBuffer.release();
+	uniformBuffer.release();
 
 	depthTextureView.release();
 	depthTexture.destroy();
@@ -197,17 +198,20 @@ void Renderer::MainLoop() {
 	renderPass.setPipeline(pipeline);
 
 	// Set vertex buffer while encoding the render pass
-	renderPass.setIndexBuffer(indexBuffer, IndexFormat::Uint16, 0, indexBuffer.getSize());
-	renderPass.setVertexBuffer(0, pointBuffer, 0, pointBuffer.getSize());
-	renderPass.setVertexBuffer(1, normalBuffer, 0, normalBuffer.getSize());
-	renderPass.setVertexBuffer(2, colorBuffer, 0, colorBuffer.getSize());	
+	//renderPass.setIndexBuffer(indexBuffer, IndexFormat::Uint16, 0, indexBuffer.getSize());
+	//renderPass.setVertexBuffer(0, pointBuffer, 0, pointBuffer.getSize());
+	//renderPass.setVertexBuffer(1, normalBuffer, 0, normalBuffer.getSize());
+	//renderPass.setVertexBuffer(2, colorBuffer, 0, colorBuffer.getSize());	
+	renderPass.setVertexBuffer(0, pointBuffer, 0, vertexData.size() * sizeof(VertexAttributes));
 
 	uint32_t dynamicOffset = 0;
 
 	// Set binding group
 	dynamicOffset =  0 * (*uniformStride);
 	renderPass.setBindGroup(0, bindGroup, 1, &dynamicOffset);
-	renderPass.drawIndexed(indexCount, 1, 0, 0, 0);
+	
+	//renderPass.drawIndexed(indexCount, 1, 0, 0, 0);
+	renderPass.draw(indexCount, 1, 0, 0);
 
 	// Set binding group with a different uniform offset
 	/*
@@ -285,6 +289,8 @@ void Renderer::InitializePipeline() {
 	RenderPipelineDescriptor pipelineDesc;
 
 	// Configure the vertex pipeline
+
+	/*
 	std::vector<VertexBufferLayout> vertexBufferLayouts(3);
 	
 	// Position Attribute
@@ -322,6 +328,33 @@ void Renderer::InitializePipeline() {
 
 	pipelineDesc.vertex.bufferCount = static_cast<uint32_t>(vertexBufferLayouts.size());
 	pipelineDesc.vertex.buffers = vertexBufferLayouts.data();
+	*/
+
+	std::vector<VertexAttribute> vertexAttribs(3);
+	// Position attribute
+	vertexAttribs[0].shaderLocation = 0;
+	vertexAttribs[0].format = VertexFormat::Float32x3;
+	vertexAttribs[0].offset = 0;
+
+	// Normal attribute
+	vertexAttribs[1].shaderLocation = 1;
+	vertexAttribs[1].format = VertexFormat::Float32x3;
+	vertexAttribs[1].offset = offsetof(VertexAttributes, normal);
+
+	// Color attribute
+	vertexAttribs[2].shaderLocation = 2;
+	vertexAttribs[2].format = VertexFormat::Float32x3;
+	vertexAttribs[2].offset = offsetof(VertexAttributes, color);
+
+	VertexBufferLayout vertexBufferLayout;
+	vertexBufferLayout.attributeCount = (uint32_t)vertexAttribs.size();
+	vertexBufferLayout.attributes = vertexAttribs.data();
+	vertexBufferLayout.arrayStride = sizeof(VertexAttributes);
+	vertexBufferLayout.stepMode = VertexStepMode::Vertex;
+	
+	pipelineDesc.vertex.bufferCount = 1;
+	pipelineDesc.vertex.buffers = &vertexBufferLayout;
+
 
 	// NB: We define the 'shaderModule' in the second part of this chapter.
 	// Here we tell that the programmable vertex shader stage is described
@@ -488,7 +521,7 @@ RequiredLimits Renderer::GetRequiredLimits(Adapter adapter) const {
 	// We should also tell that we use 1 vertex buffers
 	requiredLimits.limits.maxVertexBuffers = 3;
 	// Maximum size of a buffer is 6 vertices of 2 float each
-	requiredLimits.limits.maxBufferSize = 3 * 6 * sizeof(float);
+	requiredLimits.limits.maxBufferSize = 3 * 10000 * sizeof(float);
 	// Maximum stride between 2 consecutive vertices in the vertex buffer
 	requiredLimits.limits.maxVertexBufferArrayStride = 3 * sizeof(float); // 3 * sizeof(float)
 
@@ -515,6 +548,7 @@ RequiredLimits Renderer::GetRequiredLimits(Adapter adapter) const {
 
 void Renderer::InitializeBuffers() {
 
+	/*
 	std::vector<float> pointData;
 	std::vector<uint16_t> indexData;
 	std::vector<float> colorData;
@@ -525,11 +559,29 @@ void Renderer::InitializeBuffers() {
 	}
 
 	indexCount = static_cast<uint32_t>(indexData.size());
+	*/
+
 	
+	if (!loadGeometryFromObj("..\\resources\\piramide.obj", vertexData)) {
+		std::cout << "*** ERROR *** No se puede cargar el fichero OBJ" << std::endl;
+	}
+	indexCount = static_cast<int>(vertexData.size());	
+
+	// Create vertex buffer
+	BufferDescriptor bufferDesc;
+	bufferDesc.size = vertexData.size() * sizeof(VertexAttributes); // changed
+	bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Vertex;
+	bufferDesc.mappedAtCreation = false;
+	pointBuffer = device.createBuffer(bufferDesc);
+	queue.writeBuffer(pointBuffer, 0, vertexData.data(), bufferDesc.size); // changed
+
+
+	/*
 	// Create vertex buffer
 	BufferDescriptor bufferDesc;
 	bufferDesc.mappedAtCreation = false;
 
+	bufferDesc.size = vertexData.size() * sizeof(VertexAttributes);
 	bufferDesc.label = "Vertex Position";
 	bufferDesc.size = pointData.size() * sizeof(float);
 	bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Vertex;
@@ -548,12 +600,14 @@ void Renderer::InitializeBuffers() {
 	normalBuffer = device.createBuffer(bufferDesc);
 	queue.writeBuffer(normalBuffer, 0, normalData.data(), bufferDesc.size);
 
+	
 	bufferDesc.label = "Vertex Index";
 	bufferDesc.size = indexData.size() * sizeof(uint16_t);
 	bufferDesc.size = (bufferDesc.size + 3) & ~3;
 	bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Index;
 	indexBuffer  = device.createBuffer(bufferDesc);
 	queue.writeBuffer(indexBuffer, 0, indexData.data(), bufferDesc.size);
+	*/
 
 	// Uniform buffer
 	bufferDesc.size = sizeof(MyUniforms); //+ (*uniformStride)
@@ -783,9 +837,7 @@ ShaderModule Renderer::loadShaderModule(const fs::path& path) {
 
 
 bool  Renderer::loadGeometryFromObj(const fs::path& path,
-									std::vector<float>& pointData,
-									std::vector<float>& colorData,
-									std::vector<float>& normalData) 
+									std::vector<VertexAttributes>& vertexData)
 {
 	tinyobj::attrib_t attrib;
 	std::vector<tinyobj::shape_t> shapes;
@@ -805,31 +857,38 @@ bool  Renderer::loadGeometryFromObj(const fs::path& path,
 	}
 
 	if (!ret) {
+		std::cout << "FAIL - loadGeometryFromObj" << std::endl;
 		return false;
 	}
 
 	// Fill in vertexData here
 	const auto& shape = shapes[0]; // look at the first shape only
 
-	pointData.clear();
-	colorData.clear();
-	normalData.clear();
+	vertexData.resize(shape.mesh.indices.size());
 
 	for (size_t i = 0; i < shape.mesh.indices.size(); ++i) {
 		const tinyobj::index_t& idx = shape.mesh.indices[i];
 
-		pointData.push_back(attrib.vertices[3 * idx.vertex_index + 0]);
-		pointData.push_back(attrib.vertices[3 * idx.vertex_index + 1]);
-		pointData.push_back(attrib.vertices[3 * idx.vertex_index + 2]);
+		vertexData[i].position = {
+			attrib.vertices[3 * idx.vertex_index + 0],
+			attrib.vertices[3 * idx.vertex_index + 2],
+			attrib.vertices[3 * idx.vertex_index + 1]			
+		};
 
-		normalData.push_back(attrib.normals[3 * idx.normal_index + 0]);
-		normalData.push_back(attrib.normals[3 * idx.normal_index + 1]);
-		normalData.push_back(attrib.normals[3 * idx.normal_index + 2]);
+		vertexData[i].normal = {
+			attrib.normals[3 * idx.normal_index + 0],
+			attrib.normals[3 * idx.normal_index + 2],
+			attrib.normals[3 * idx.normal_index + 1]			
+		};
 
-		colorData.push_back(attrib.colors[3 * idx.vertex_index + 0]);
-		colorData.push_back(attrib.colors[3 * idx.vertex_index + 1]);
-		colorData.push_back(attrib.colors[3 * idx.vertex_index + 2]);
+		vertexData[i].color = {
+			attrib.colors[3 * idx.vertex_index + 0],
+			attrib.colors[3 * idx.vertex_index + 2],
+			attrib.colors[3 * idx.vertex_index + 1]			
+		};
 	}
+
+	std::cout << "Mesh indices " << shape.mesh.indices.size() << std::endl;
 
 	return true;
 }

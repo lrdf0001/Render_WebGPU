@@ -24,6 +24,12 @@ struct MyUniforms {
 	float _pad[3];
 };
 
+struct VertexAttributes {
+	glm::vec3 position;
+	glm::vec3 normal;
+	glm::vec3 color;
+};
+
 static const float PI = 3.14159265358979323846f;
 
 class Renderer {
@@ -62,9 +68,7 @@ private:
 	ShaderModule loadShaderModule(const fs::path& path);
 
 	bool loadGeometryFromObj(const fs::path& path, 
-							std::vector<float>& pointData,
-							std::vector<float>& colorData,
-							std::vector<float>& normalData);
+							std::vector<VertexAttributes>& vertexData);
 
 
 private:
@@ -91,4 +95,6 @@ private:
 
 	Texture depthTexture;
 	TextureView depthTextureView;
+
+	std::vector<VertexAttributes> vertexData;
 };
