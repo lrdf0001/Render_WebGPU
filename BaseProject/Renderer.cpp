@@ -9,6 +9,9 @@
 #include <glm/ext/matrix_transform.hpp> // glm::translate, glm::rotate, glm::scale
 #include <glm/ext/matrix_clip_space.hpp> // glm::perspective
 
+#define TINYOBJLOADER_IMPLEMENTATION // add this to exactly 1 of your C++ files
+#include "tiny_obj_loader.h"
+
 #include <iostream>
 #include <cassert>
 #include <vector>
@@ -31,7 +34,7 @@ static uint32_t ceilToNextMultiple(uint32_t value, uint32_t step) {
 
 
 Renderer::Renderer(): device(nullptr), queue(nullptr), surface(nullptr), pipeline(nullptr), 
-		pointBuffer(nullptr), colorBuffer(nullptr), indexBuffer(nullptr), uniformBuffer(nullptr), 
+		pointBuffer(nullptr), colorBuffer(nullptr), normalBuffer(nullptr), indexBuffer(nullptr), uniformBuffer(nullptr),
 		bindGroup(nullptr), depthTexture(nullptr), depthTextureView(nullptr)
 {
 	uniformStride = new uint32_t();
@@ -196,7 +199,8 @@ void Renderer::MainLoop() {
 	// Set vertex buffer while encoding the render pass
 	renderPass.setIndexBuffer(indexBuffer, IndexFormat::Uint16, 0, indexBuffer.getSize());
 	renderPass.setVertexBuffer(0, pointBuffer, 0, pointBuffer.getSize());
-	renderPass.setVertexBuffer(1, colorBuffer, 0, colorBuffer.getSize());	
+	renderPass.setVertexBuffer(1, normalBuffer, 0, normalBuffer.getSize());
+	renderPass.setVertexBuffer(2, colorBuffer, 0, colorBuffer.getSize());	
 
 	uint32_t dynamicOffset = 0;
 
@@ -281,7 +285,7 @@ void Renderer::InitializePipeline() {
 	RenderPipelineDescriptor pipelineDesc;
 
 	// Configure the vertex pipeline
-	std::vector<VertexBufferLayout> vertexBufferLayouts(2);
+	std::vector<VertexBufferLayout> vertexBufferLayouts(3);
 	
 	// Position Attribute
 	VertexAttribute positionAttrib;
@@ -294,16 +298,27 @@ void Renderer::InitializePipeline() {
 	vertexBufferLayouts[0].arrayStride = 3 * sizeof(float); // stride = size of position
 	vertexBufferLayouts[0].stepMode = VertexStepMode::Vertex;
 
+	// Normal attribute
+	VertexAttribute normalAttrib;
+	normalAttrib.shaderLocation = 1; // @location(1)
+	normalAttrib.format = VertexFormat::Float32x3; 
+	normalAttrib.offset = 0;
+
+	vertexBufferLayouts[1].attributeCount = 1;
+	vertexBufferLayouts[1].attributes = &normalAttrib;
+	vertexBufferLayouts[1].arrayStride = 3 * sizeof(float); 
+	vertexBufferLayouts[1].stepMode = VertexStepMode::Vertex;
+	
 	// Color attribute
 	VertexAttribute colorAttrib;
-	colorAttrib.shaderLocation = 1; // @location(1)
+	colorAttrib.shaderLocation = 2; // @location(2)
 	colorAttrib.format = VertexFormat::Float32x3; // size of color
 	colorAttrib.offset = 0;
 
-	vertexBufferLayouts[1].attributeCount = 1;
-	vertexBufferLayouts[1].attributes = &colorAttrib;
-	vertexBufferLayouts[1].arrayStride = 3 * sizeof(float); // stride = size of color
-	vertexBufferLayouts[1].stepMode = VertexStepMode::Vertex;
+	vertexBufferLayouts[2].attributeCount = 1;
+	vertexBufferLayouts[2].attributes = &colorAttrib;
+	vertexBufferLayouts[2].arrayStride = 3 * sizeof(float); // stride = size of color
+	vertexBufferLayouts[2].stepMode = VertexStepMode::Vertex;
 
 	pipelineDesc.vertex.bufferCount = static_cast<uint32_t>(vertexBufferLayouts.size());
 	pipelineDesc.vertex.buffers = vertexBufferLayouts.data();
@@ -326,12 +341,12 @@ void Renderer::InitializePipeline() {
 	// The face orientation is defined by assuming that when looking
 	// from the front of the face, its corner vertices are enumerated
 	// in the counter-clockwise (CCW) order.
-	pipelineDesc.primitive.frontFace = FrontFace::CW;
+	pipelineDesc.primitive.frontFace = FrontFace::CCW;
 	
 	// But the face orientation does not matter much because we do not
 	// cull (i.e. "hide") the faces pointing away from us (which is often
 	// used for optimization).
-	pipelineDesc.primitive.cullMode = CullMode::Back;
+	pipelineDesc.primitive.cullMode = CullMode::None;
 	
 
 	// We tell that the programmable fragment shader stage is described
@@ -469,13 +484,13 @@ RequiredLimits Renderer::GetRequiredLimits(Adapter adapter) const {
 	RequiredLimits requiredLimits = Default;
 
 	// We use at most 1 vertex attribute for now
-	requiredLimits.limits.maxVertexAttributes = 1;
+	requiredLimits.limits.maxVertexAttributes = 3;
 	// We should also tell that we use 1 vertex buffers
-	requiredLimits.limits.maxVertexBuffers = 1;
+	requiredLimits.limits.maxVertexBuffers = 3;
 	// Maximum size of a buffer is 6 vertices of 2 float each
-	requiredLimits.limits.maxBufferSize = 6 * 2 * sizeof(float);
+	requiredLimits.limits.maxBufferSize = 3 * 6 * sizeof(float);
 	// Maximum stride between 2 consecutive vertices in the vertex buffer
-	requiredLimits.limits.maxVertexBufferArrayStride = 2 * sizeof(float);
+	requiredLimits.limits.maxVertexBufferArrayStride = 3 * sizeof(float); // 3 * sizeof(float)
 
 	requiredLimits.limits.maxTextureDimension1D = 480;
 	requiredLimits.limits.maxTextureDimension2D = 640;
@@ -503,8 +518,9 @@ void Renderer::InitializeBuffers() {
 	std::vector<float> pointData;
 	std::vector<uint16_t> indexData;
 	std::vector<float> colorData;
+	std::vector<float> normalData;
 
-	if(!loadGeometry("..\\resources\\piramide.txt", pointData, colorData, indexData)){
+	if(!loadGeometry("..\\resources\\piramide2.txt", pointData, colorData, indexData, normalData)){
 		std::cout<< "*** ERROR *** No se puede cargar el fichero"<<std::endl;
 	}
 
@@ -524,7 +540,13 @@ void Renderer::InitializeBuffers() {
 	bufferDesc.size = colorData.size() * sizeof(float);
 	bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Vertex;
 	colorBuffer = device.createBuffer(bufferDesc);
-	queue.writeBuffer(colorBuffer, 0, colorData.data(), bufferDesc.size);	
+	queue.writeBuffer(colorBuffer, 0, colorData.data(), bufferDesc.size);
+
+	bufferDesc.label = "Vertex Normal";
+	bufferDesc.size = normalData.size() * sizeof(float);
+	bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Vertex;
+	normalBuffer = device.createBuffer(bufferDesc);
+	queue.writeBuffer(normalBuffer, 0, normalData.data(), bufferDesc.size);
 
 	bufferDesc.label = "Vertex Index";
 	bufferDesc.size = indexData.size() * sizeof(uint16_t);
@@ -616,7 +638,8 @@ void Renderer::InitializeUniforms() {
 bool Renderer::loadGeometry(const fs::path& path, 
 								std::vector<float>& pointData, 
 								std::vector<float>& colorData, 
-								std::vector<uint16_t>& indexData) 
+								std::vector<uint16_t>& indexData,
+								std::vector<float> &normalData)
 {
     std::ifstream file(path);
     if (!file.is_open()) {
@@ -626,12 +649,14 @@ bool Renderer::loadGeometry(const fs::path& path,
     pointData.clear();
 	colorData.clear();
     indexData.clear();
+	normalData.clear();
 
     enum class Section {
         None,
         Points,
 		Colors,
         Indices,
+		Normal,
     };
     Section currentSection = Section::None;
 
@@ -655,6 +680,9 @@ bool Renderer::loadGeometry(const fs::path& path,
 		else if (line == "[indices]") {
             currentSection = Section::Indices;
         }
+		else if(line == "[normal]"){
+			currentSection = Section::Normal;
+		}
         else if (line[0] == '#' || line.empty()) {
             // Do nothing, this is a comment
         }
@@ -682,7 +710,51 @@ bool Renderer::loadGeometry(const fs::path& path,
                 indexData.push_back(index);
             }
         }
+		else if (currentSection == Section::Normal) {
+			
+			std::istringstream iss(line);
+			// Get corners #0 #1 and #2
+			for (int i = 0; i < 3; ++i) {
+				iss >> value;
+				normalData.push_back(value);
+				std::cout << value << " ";
+			}
+			std::cout << std::endl;
+			
+		}
     }
+
+	/*
+	std::cout << "Normales" << std::endl;
+	for (int i = 0; i < indexData.size(); i += 3) {
+
+		int i1 = indexData[i];
+		int i2 = indexData[i + 1];
+		int i3 = indexData[i + 2];
+
+		glm::vec3 p1(pointData[i1 * 3], pointData[i1 * 3 + 1], pointData[i1 * 3 + 2]);
+		glm::vec3 p2(pointData[i2 * 3], pointData[i2 * 3 + 1], pointData[i2 * 3 + 2]);
+		glm::vec3 p3(pointData[i3 * 3], pointData[i3 * 3 + 1], pointData[i3 * 3 + 2]);
+
+		glm::vec3 v1(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z);
+		glm::vec3 v2(p3.x - p1.x, p3.y - p1.y, p3.z - p1.z);
+
+		glm::vec3 n(v1.y*v2.z - v1.z*v2.y, v1.z*v2.x - v1.x*v2.z, v1.x*v2.y - v1.y*v2.x);
+
+		std::cout << n.x << " " << n.y << " " << n.z << std::endl;
+
+		//float mod = sqrt(n.x*n.x + n.y*n.y+ n.z*n.z);
+
+		for(int j=0; j<3; j++)
+		{
+			normalData.push_back(n.x); //  / mod
+			normalData.push_back(n.y);
+			normalData.push_back(n.z);
+		}
+	}
+	*/
+	
+
     return true;
 }
 
@@ -707,4 +779,57 @@ ShaderModule Renderer::loadShaderModule(const fs::path& path) {
     ShaderModuleDescriptor shaderDesc{};
     shaderDesc.nextInChain = &shaderCodeDesc.chain;
     return device.createShaderModule(shaderDesc);
+}
+
+
+bool  Renderer::loadGeometryFromObj(const fs::path& path,
+									std::vector<float>& pointData,
+									std::vector<float>& colorData,
+									std::vector<float>& normalData) 
+{
+	tinyobj::attrib_t attrib;
+	std::vector<tinyobj::shape_t> shapes;
+	std::vector<tinyobj::material_t> materials;
+
+	std::string warn;
+	std::string err;
+
+	bool ret = tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err, path.string().c_str());
+
+	if (!warn.empty()) {
+		std::cout << warn << std::endl;
+	}
+
+	if (!err.empty()) {
+		std::cerr << err << std::endl;
+	}
+
+	if (!ret) {
+		return false;
+	}
+
+	// Fill in vertexData here
+	const auto& shape = shapes[0]; // look at the first shape only
+
+	pointData.clear();
+	colorData.clear();
+	normalData.clear();
+
+	for (size_t i = 0; i < shape.mesh.indices.size(); ++i) {
+		const tinyobj::index_t& idx = shape.mesh.indices[i];
+
+		pointData.push_back(attrib.vertices[3 * idx.vertex_index + 0]);
+		pointData.push_back(attrib.vertices[3 * idx.vertex_index + 1]);
+		pointData.push_back(attrib.vertices[3 * idx.vertex_index + 2]);
+
+		normalData.push_back(attrib.normals[3 * idx.normal_index + 0]);
+		normalData.push_back(attrib.normals[3 * idx.normal_index + 1]);
+		normalData.push_back(attrib.normals[3 * idx.normal_index + 2]);
+
+		colorData.push_back(attrib.colors[3 * idx.vertex_index + 0]);
+		colorData.push_back(attrib.colors[3 * idx.vertex_index + 1]);
+		colorData.push_back(attrib.colors[3 * idx.vertex_index + 2]);
+	}
+
+	return true;
 }
