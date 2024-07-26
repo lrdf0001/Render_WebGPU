@@ -562,7 +562,7 @@ void Renderer::InitializeBuffers() {
 	*/
 
 	
-	if (!loadGeometryFromObj("..\\resources\\piramide.obj", vertexData)) {
+	if (!loadGeometryFromObj("..\\resources\\mammoth.obj", vertexData)) {
 		std::cout << "*** ERROR *** No se puede cargar el fichero OBJ" << std::endl;
 	}
 	indexCount = static_cast<int>(vertexData.size());	
@@ -581,7 +581,7 @@ void Renderer::InitializeBuffers() {
 	BufferDescriptor bufferDesc;
 	bufferDesc.mappedAtCreation = false;
 
-	bufferDesc.size = vertexData.size() * sizeof(VertexAttributes);
+	bufferDesc.size = pointData.size() * sizeof(VertexAttributes);
 	bufferDesc.label = "Vertex Position";
 	bufferDesc.size = pointData.size() * sizeof(float);
 	bufferDesc.usage = BufferUsage::CopyDst | BufferUsage::Vertex;
