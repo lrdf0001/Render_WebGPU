@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/CMakeFiles/webgpu-backend-emscripten-populate"
+		},
+		{
+			"file" : "C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/CMakeFiles/webgpu-backend-emscripten-populate.rule"
+		},
+		{
+			"file" : "C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/CMakeFiles/webgpu-backend-emscripten-populate-complete.rule"
+		},
+		{
+			"file" : "C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/webgpu-backend-emscripten-populate-prefix/src/webgpu-backend-emscripten-populate-stamp/webgpu-backend-emscripten-populate-build.rule"
+		},
+		{
+			"file" : "C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/webgpu-backend-emscripten-populate-prefix/src/webgpu-backend-emscripten-populate-stamp/webgpu-backend-emscripten-populate-configure.rule"
+		},
+		{
+			"file" : "C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/webgpu-backend-emscripten-populate-prefix/src/webgpu-backend-emscripten-populate-stamp/webgpu-backend-emscripten-populate-download.rule"
+		},
+		{
+			"file" : "C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/webgpu-backend-emscripten-populate-prefix/src/webgpu-backend-emscripten-populate-stamp/webgpu-backend-emscripten-populate-install.rule"
+		},
+		{
+			"file" : "C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/webgpu-backend-emscripten-populate-prefix/src/webgpu-backend-emscripten-populate-stamp/webgpu-backend-emscripten-populate-mkdir.rule"
+		},
+		{
+			"file" : "C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/webgpu-backend-emscripten-populate-prefix/src/webgpu-backend-emscripten-populate-stamp/webgpu-backend-emscripten-populate-patch.rule"
+		},
+		{
+			"file" : "C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/webgpu-backend-emscripten-populate-prefix/src/webgpu-backend-emscripten-populate-stamp/webgpu-backend-emscripten-populate-test.rule"
+		},
+		{
+			"file" : "C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/webgpu-backend-emscripten-populate-prefix/src/webgpu-backend-emscripten-populate-stamp/webgpu-backend-emscripten-populate-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"webgpu-backend-emscripten-populate"
+		],
+		"name" : "webgpu-backend-emscripten-populate"
+	}
+}

@@ -34,7 +34,7 @@ static uint32_t ceilToNextMultiple(uint32_t value, uint32_t step) {
 
 
 Renderer::Renderer(): device(nullptr), queue(nullptr), surface(nullptr), pipeline(nullptr), 
-		pointBuffer(nullptr), colorBuffer(nullptr), normalBuffer(nullptr), indexBuffer(nullptr), uniformBuffer(nullptr),
+		pointBuffer(nullptr), indexBuffer(nullptr), colorBuffer(nullptr), normalBuffer(nullptr),  uniformBuffer(nullptr),
 		bindGroup(nullptr), depthTexture(nullptr), depthTextureView(nullptr), vertexData()
 {
 	uniformStride = new uint32_t();
@@ -149,7 +149,7 @@ void Renderer::MainLoop() {
 	uniforms.modelMatrix = R1 * T1S;
 	queue.writeBuffer(uniformBuffer, offsetof(MyUniforms, modelMatrix), &uniforms.modelMatrix, sizeof(MyUniforms::modelMatrix));
 
-	// Get the next target texture view
+	// Loop: Get the next target texture view
 	TextureView targetView = GetNextSurfaceTextureView();
 	if (!targetView) return;
 
@@ -281,7 +281,7 @@ TextureView Renderer::GetNextSurfaceTextureView() {
 void Renderer::InitializePipeline() {
 	
 	std::cout << "Creating shader module..." << std::endl;
-	ShaderModule shaderModule = loadShaderModule("..\\resources\\shaders2.wgsl");
+	ShaderModule shaderModule = loadShaderModule("C:/Users/admin/Desktop/WebGPU/BaseProject/resources/shaders2.wgsl");
 	std::cout << fs::current_path().string() << std::endl;
 	std::cout << "Shader module: " << shaderModule << std::endl;
 
@@ -356,7 +356,6 @@ void Renderer::InitializePipeline() {
 	pipelineDesc.vertex.buffers = &vertexBufferLayout;
 
 
-	// NB: We define the 'shaderModule' in the second part of this chapter.
 	// Here we tell that the programmable vertex shader stage is described
 	// by the function called 'vs_main' in that module.
 	pipelineDesc.vertex.module = shaderModule;
@@ -562,7 +561,7 @@ void Renderer::InitializeBuffers() {
 	*/
 
 	
-	if (!loadGeometryFromObj("..\\resources\\mammoth.obj", vertexData)) {
+	if (!loadGeometryFromObj("C:/Users/admin/Desktop/WebGPU/BaseProject/resources/mammoth.obj", vertexData)) {
 		std::cout << "*** ERROR *** No se puede cargar el fichero OBJ" << std::endl;
 	}
 	indexCount = static_cast<int>(vertexData.size());	

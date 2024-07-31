@@ -12,7 +12,7 @@ int main() {
 #ifdef __EMSCRIPTEN__
 	// Equivalent of the main loop when using Emscripten:
 	auto callback = [](void *arg) {
-		Application* pApp = reinterpret_cast<Application*>(arg);
+		Renderer* pApp = reinterpret_cast<Renderer*>(arg);
 		pApp->MainLoop(); // 4. We can use the application object
 	};
 	emscripten_set_main_loop_arg(callback, &app, 0, true);

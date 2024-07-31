@@ -1,0 +1,1 @@
+C:\Users\admin\Desktop\emsdk\upstream\emscripten\em++.bat -sUSE_GLFW=3 -sUSE_WEBGPU -sASYNCIFY -sALLOW_MEMORY_GROWTH --preload-file C:/Users/admin/Desktop/WebGPU/BaseProject/resources @CMakeFiles\App.dir\objects1.rsp -o App.html @CMakeFiles\App.dir\linkLibs.rsp

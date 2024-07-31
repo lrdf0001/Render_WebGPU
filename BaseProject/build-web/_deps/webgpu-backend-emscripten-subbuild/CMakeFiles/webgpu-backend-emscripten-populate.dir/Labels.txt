@@ -1,0 +1,14 @@
+# Target labels
+ webgpu-backend-emscripten-populate
+# Source files and their labels
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/CMakeFiles/webgpu-backend-emscripten-populate
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/CMakeFiles/webgpu-backend-emscripten-populate.rule
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/CMakeFiles/webgpu-backend-emscripten-populate-complete.rule
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/webgpu-backend-emscripten-populate-prefix/src/webgpu-backend-emscripten-populate-stamp/webgpu-backend-emscripten-populate-build.rule
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/webgpu-backend-emscripten-populate-prefix/src/webgpu-backend-emscripten-populate-stamp/webgpu-backend-emscripten-populate-configure.rule
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/webgpu-backend-emscripten-populate-prefix/src/webgpu-backend-emscripten-populate-stamp/webgpu-backend-emscripten-populate-download.rule
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/webgpu-backend-emscripten-populate-prefix/src/webgpu-backend-emscripten-populate-stamp/webgpu-backend-emscripten-populate-install.rule
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/webgpu-backend-emscripten-populate-prefix/src/webgpu-backend-emscripten-populate-stamp/webgpu-backend-emscripten-populate-mkdir.rule
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/webgpu-backend-emscripten-populate-prefix/src/webgpu-backend-emscripten-populate-stamp/webgpu-backend-emscripten-populate-patch.rule
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/webgpu-backend-emscripten-populate-prefix/src/webgpu-backend-emscripten-populate-stamp/webgpu-backend-emscripten-populate-test.rule
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/webgpu-backend-emscripten-populate-prefix/src/webgpu-backend-emscripten-populate-stamp/webgpu-backend-emscripten-populate-update.rule

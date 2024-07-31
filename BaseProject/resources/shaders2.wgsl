@@ -7,7 +7,6 @@ struct MyUniforms {
     time: f32   
 };
 
-
 @group(0) @binding(0) var<uniform> uMyUniforms: MyUniforms;
 
 struct VertexInput {
@@ -25,7 +24,8 @@ struct VertexOutput {
 @vertex
 fn vs_main(in: VertexInput) -> VertexOutput  {
 	var out: VertexOutput;
-    out.position = uMyUniforms.projectionMatrix * uMyUniforms.viewMatrix * uMyUniforms.modelMatrix * vec4f(in.position, 1.0);
+    out.position = uMyUniforms.projectionMatrix * uMyUniforms.viewMatrix 
+                    * uMyUniforms.modelMatrix * vec4f(in.position, 1.0);
     out.color = in.color;
     out.normal = in.normal;
     return out;

@@ -51,7 +51,17 @@ if (XCODE)
 	)
 endif()
 
+
 if (EMSCRIPTEN)
+	# Add Emscripten-specific link options
+	target_link_options(App PRIVATE
+		-sUSE_GLFW=3 # Use Emscripten-provided GLFW
+		-sUSE_WEBGPU # Handle WebGPU symbols
+		-sASYNCIFY # Required by WebGPU-C++
+		-sALLOW_MEMORY_GROWTH
+		--preload-file "${CMAKE_CURRENT_SOURCE_DIR}/resources"
+	)
+
+	# Generate a full web page rather than a simple WebAssembly module
 	set_target_properties(App PROPERTIES SUFFIX ".html")
-	target_link_options(App PRIVATE -sASYNCIFY)
 endif()

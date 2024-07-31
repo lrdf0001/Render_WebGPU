@@ -1,0 +1,3 @@
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/CMakeFiles/webgpu-backend-emscripten-populate.dir
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/CMakeFiles/edit_cache.dir
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-subbuild/CMakeFiles/rebuild_cache.dir

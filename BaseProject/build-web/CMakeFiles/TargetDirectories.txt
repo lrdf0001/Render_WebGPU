@@ -1,0 +1,10 @@
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/CMakeFiles/App.dir
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/CMakeFiles/edit_cache.dir
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/CMakeFiles/rebuild_cache.dir
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/webgpu/CMakeFiles/edit_cache.dir
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/webgpu/CMakeFiles/rebuild_cache.dir
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-build/CMakeFiles/edit_cache.dir
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/_deps/webgpu-backend-emscripten-build/CMakeFiles/rebuild_cache.dir
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/glfw3webgpu/CMakeFiles/glfw3webgpu.dir
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/glfw3webgpu/CMakeFiles/edit_cache.dir
+C:/Users/admin/Desktop/WebGPU/BaseProject/build-web/glfw3webgpu/CMakeFiles/rebuild_cache.dir

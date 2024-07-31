@@ -1,0 +1,2 @@
+C:\Users\admin\Desktop\emsdk\upstream\emscripten\emar.bat qc libglfw3webgpu.a CMakeFiles/glfw3webgpu.dir/glfw3webgpu.c.o
+C:\Users\admin\Desktop\emsdk\upstream\emscripten\emranlib.bat libglfw3webgpu.a
